@@ -1,0 +1,43 @@
+
+  492  export PATH=$PATH:/usr/local/gcc-4.8.4/bin/
+  563  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+  727  export PATH=$PATH:/usr/local/gcc-4.8.4/bin/
+  730  export PATH=$PATH:/usr/local/gcc-4.8.4/bin/
+  731  export LD_LIBRARY_PATH=/usr/local/lib:/lib:/lib64
+ 1054  export PATH=$PATH:/usr/local/gcc-4.8.4
+ 1056  export PATH=$PATH:/usr/local/gcc-4.8.4/bin/
+ 1060  export PATH=$PATH:/usr/local/gcc-4.8.4/bin/
+ 1089  history | grep export
+ 1091  export LD_LIBRARY_PATH=/usr/local/lib:/lib:/lib64:/usr/lib
+ 1094  history | grep export
+ 1097  echo export LD_LIBRARY_PATH=/usr/local/lib:/lib:/lib64:/usr/lib > /yang.txt
+ 1098  echo export PATH=$PATH:/usr/local/gcc-4.8.4/bin/ >> /yang.txt
+ 1124  export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/gcc-4.8.4/bin/:/usr/local/gcc-4.8.4/bin/:/usr/local/autoconf/bin/
+ 1177  export LD_LIBRARY_PATH=/usr/local/lib:/lib:/lib64:/usr/lib:/usr/local/lib64
+ 1187  export LD_LIBRARY_PATH=/usr/local/lib:/lib:/lib64:/usr/lib:/usr/local/lib64
+ 1193    export PKG_CONFIG=/usr/local/lib/pkgconfig/
+ 1197  echo "export PKG_CONFIG=/usr/local/lib/pkgconfig/" >> /yang.txt
+ 1219  history | grep export
+ 1290  export PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/share/pkgconfig:/lib/pkgconfig
+ 1293      export PKG_CONFIG=/usr/local/bin/pkg-config
+ 1301  export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+ 1307  export PKG_CONFIG=`which pkg-config`
+ 1308  export LD_LIBRARY_PATH=/usr/local/lib
+ 1309  export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+ 1311  export LD_LIBRARY_PATH=/usr/local/lib:/lib:/lib64:/usr/lib:/usr/local/lib64
+ 1314  history | grep export
+ 1315  echo " export PKG_CONFIG=`which pkg-config`" > /yang.txt
+ 1316  echo "export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig" > /yang.txt
+ 1319  history | grep export
+
+add the following to ~/.bash_profile 
+ export LD_LIBRARY_PATH=/usr/local/libtool/lib:/usr/local/lib:/lib:/lib64:/usr/lib:/usr/lib64
+export PKG_CONFIG=`which pkg-config`
+export PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/share/pkgconfig:/lib/pkgconfig
+export PATH=/usr/local/gcc-4.8.4/bin/:$PATH
+export LD_LIBRARY_PATH=/usr/local/libtool/lib:/usr/local/lib:/lib:/lib64:/usr/lib:/usr/lib64
+
+if have these problem
+lib/Makefile.am:35: error: Libtool library used but 'LIBTOOL' is undefined
+run libtoolize can resolve it
+
