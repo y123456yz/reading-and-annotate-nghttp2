@@ -827,7 +827,7 @@ int nghttp2_session_add_item(nghttp2_session *session,
 
   switch (frame->hd.type) {
   case NGHTTP2_DATA:
-    if (!stream) {
+    if (!stream) { //发送DATA帧前必须提前stream必须已经存在
       return NGHTTP2_ERR_STREAM_CLOSED;
     }
 
@@ -6639,6 +6639,7 @@ int nghttp2_session_add_ping(nghttp2_session *session, uint8_t flags,
 
   frame = &item->frame;
 
+  //
   nghttp2_frame_ping_init(&frame->ping, flags, opaque_data);
 
   rv = nghttp2_session_add_item(session, item);
@@ -6780,6 +6781,7 @@ int nghttp2_session_add_settings(nghttp2_session *session, uint8_t flags,
     return NGHTTP2_ERR_INVALID_ARGUMENT;
   }
 
+  //创建空间，session->mem指向该空间
   item = nghttp2_mem_malloc(mem, sizeof(nghttp2_outbound_item));
   if (item == NULL) {
     return NGHTTP2_ERR_NOMEM;
@@ -6795,8 +6797,8 @@ int nghttp2_session_add_settings(nghttp2_session *session, uint8_t flags,
     iv_copy = NULL;
   }
 
-  if ((flags & NGHTTP2_FLAG_ACK) == 0) {
-    rv = inflight_settings_new(&inflight_settings, iv, niv, mem);
+  if ((flags & NGHTTP2_FLAG_ACK) == 0) { //说明是setting请求帧
+    rv = inflight_settings_new(&inflight_settings, iv, niv, mem); //把存储setting帧标识符的信息拷贝到inflight_settings
     if (rv != 0) {
       assert(nghttp2_is_fatal(rv));
       nghttp2_mem_free(mem, iv_copy);
@@ -6807,7 +6809,7 @@ int nghttp2_session_add_settings(nghttp2_session *session, uint8_t flags,
 
   nghttp2_outbound_item_init(item);
 
-  frame = &item->frame;
+  frame = &item->frame; //
 
   nghttp2_frame_settings_init(&frame->settings, flags, iv_copy, niv);
   rv = nghttp2_session_add_item(session, item);

@@ -103,10 +103,11 @@ typedef union {
 } nghttp2_aux_data;
 
 struct nghttp2_outbound_item;
-typedef struct nghttp2_outbound_item nghttp2_outbound_item;
 
+/* 初始化见nghttp2_outbound_item_init */
+typedef struct nghttp2_outbound_item nghttp2_outbound_item;
 struct nghttp2_outbound_item {
-  nghttp2_frame frame;
+  nghttp2_frame frame;//frame内容
   /* Storage for extension frame payload.  frame->ext.payload points
      to this structure to avoid frequent memory allocation. */
   nghttp2_ext_frame_payload ext_frame_payload;
@@ -119,7 +120,7 @@ struct nghttp2_outbound_item {
      that the amount of transmission is distributed across streams
      proportional to effective weight (inside a tree). */
   uint64_t cycle;
-  nghttp2_outbound_item *qnext;
+  nghttp2_outbound_item *qnext; //连接下一个frame
   /* nonzero if this object is queued, except for DATA or HEADERS
      which are attached to stream as item. */
   uint8_t queued;

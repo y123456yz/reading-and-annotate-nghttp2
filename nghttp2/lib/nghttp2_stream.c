@@ -145,6 +145,7 @@ static void stream_next_cycle(nghttp2_stream *stream, uint32_t last_cycle) {
   stream->pending_penalty = penalty % (uint32_t)stream->weight;
 }
 
+//
 static int stream_obq_push(nghttp2_stream *dep_stream, nghttp2_stream *stream) {
   int rv;
 

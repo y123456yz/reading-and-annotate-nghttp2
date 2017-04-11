@@ -96,6 +96,7 @@ typedef struct {
    response frames are stacked up, which leads to memory exhaustion.
    The value selected here is arbitrary, but safe value and if we have
    these frames in this number, it is considered suspicious. */
+//一个帧最多携带obq_flood_counter_个实体信息，例如setting帧最多携带NGHTTP2_MAX_OBQ_FLOOD_ITEM个标识符实体
 #define NGHTTP2_MAX_OBQ_FLOOD_ITEM 10000
 
 /* The default value of maximum number of concurrent streams. */
@@ -184,10 +185,11 @@ struct nghttp2_inflight_settings {
   nghttp2_settings_entry *iv;
   size_t niv;
 };
-
 typedef struct nghttp2_inflight_settings nghttp2_inflight_settings;
 
+//创建对应的空间见nghttp2_session_client_new2
 struct nghttp2_session {
+  //所有的stream存入该map表中，参考nghttp2_session_get_stream
   nghttp2_map /* <nghttp2_stream*> */ streams;
   /* root of dependency tree*/
   nghttp2_stream root;
@@ -205,7 +207,7 @@ struct nghttp2_session {
   nghttp2_hd_inflater hd_inflater;
   nghttp2_session_callbacks callbacks;
   /* Memory allocator */
-  nghttp2_mem mem;
+  nghttp2_mem mem; //例如setting帧空间创建在nghttp2_session_add_settings
   /* Base value when we schedule next DATA frame write.  This is
      updated when one frame was written. */
   uint64_t last_cycle;
@@ -259,7 +261,8 @@ struct nghttp2_session {
   /* The number of bytes allocated for nvbuf */
   size_t nvbuflen;
   /* Counter for detecting flooding in outbound queue */
-  size_t obq_flood_counter_;
+  //一个帧最多携带obq_flood_counter_个实体信息，例如setting帧最多携带NGHTTP2_MAX_OBQ_FLOOD_ITEM个标识符实体
+  size_t obq_flood_counter_; 
   /* The maximum length of header block to send.  Calculated by the
      same way as nghttp2_hd_deflate_bound() does. */
   size_t max_send_header_block_length;

@@ -888,6 +888,7 @@ int nghttp2_nv_array_copy(nghttp2_nv **nva_ptr, const nghttp2_nv *nva,
   return 0;
 }
 
+//setting帧标识符实体，一个setting帧可以携带多个标识符实体发送，见populate_settings，check检查在nghttp2_iv_check
 int nghttp2_iv_check(const nghttp2_settings_entry *iv, size_t niv) {
   size_t i;
   for (i = 0; i < niv; ++i) {

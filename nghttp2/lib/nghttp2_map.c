@@ -156,6 +156,7 @@ int nghttp2_map_insert(nghttp2_map *map, nghttp2_map_entry *new_entry) {
   return 0;
 }
 
+//根据stream_id查找对应的stream
 nghttp2_map_entry *nghttp2_map_find(nghttp2_map *map, key_type key) {
   uint32_t h;
   nghttp2_map_entry *entry;

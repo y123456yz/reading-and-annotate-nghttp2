@@ -25,6 +25,12 @@
 #include "nghttp2_debug.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #ifdef DEBUGBUILD
 
@@ -36,11 +42,21 @@ static void nghttp2_default_debug_vfprintf_callback(const char *fmt,
 static nghttp2_debug_vprintf_callback static_debug_vprintf_callback =
     nghttp2_default_debug_vfprintf_callback;
 
-void nghttp2_debug_vprintf(const char *format, ...) {
+void nghttp2_debug_vprintf(const char* filename, int lineno, const char *format, ...) {
   if (static_debug_vprintf_callback) {
+    FILE *fp = stdout;
+    char szbuf[256];
+    int len = 0;
+
     va_list args;
     va_start(args, format);
-    static_debug_vprintf_callback(format, args);
+
+    memset(szbuf, 0, 256);
+    len = snprintf(szbuf, 256, "[%40s, %5d]: ", (char *)filename, (size_t)lineno);
+   
+    vsnprintf(szbuf + len, 256 - len, format, args);
+    write(2, szbuf, strlen(szbuf));
+    //static_debug_vprintf_callback(format, args);
     va_end(args);
   }
 }

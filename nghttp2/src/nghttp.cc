@@ -622,6 +622,7 @@ HttpClient::~HttpClient() {
   }
 }
 
+//需要upgrade协商  部分web服务器不支持，例如nginx
 bool HttpClient::need_upgrade() const {
   return config.upgrade && scheme == "http";
 }
@@ -886,7 +887,7 @@ int HttpClient::connected() {
 }
 
 namespace {
-//setting帧标识符信息
+//初始化setting帧标识符信息
 size_t populate_settings(nghttp2_settings_entry *iv) {
   size_t niv = 2;
 
@@ -913,7 +914,7 @@ size_t populate_settings(nghttp2_settings_entry *iv) {
     ++niv;
   }
 
-  if (config.no_push) {
+  if (config.no_push) { //是否启用推送服务
     iv[niv].settings_id = NGHTTP2_SETTINGS_ENABLE_PUSH;
     iv[niv].value = 0;
     ++niv;
@@ -1124,6 +1125,7 @@ int HttpClient::connection_made() {
     }
   }
 
+  //session空间赋值
   rv = nghttp2_session_client_new2(&session, callbacks, this,
                                    config.http2_option);
 
@@ -1153,12 +1155,13 @@ int HttpClient::connection_made() {
       request_done(stream_user_data);
     }
   }
+  
   // If upgrade succeeds, the SETTINGS value sent with
   // HTTP2-Settings header field has already been submitted to
   // session object.
   if (!need_upgrade()) {
     std::array<nghttp2_settings_entry, 16> iv;
-    auto niv = populate_settings(iv.data());
+    auto niv = populate_settings(iv.data()); //setting帧各种标识符填充
     rv = nghttp2_submit_settings(session, NGHTTP2_FLAG_NONE, iv.data(), niv);
     if (rv != 0) {
       return -1;

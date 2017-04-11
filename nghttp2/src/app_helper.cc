@@ -166,8 +166,7 @@ void print_timer() {
 
 namespace {
 void print_frame_hd(const nghttp2_frame_hd &hd) {
-  fprintf(outfile, "<length=%zu, flags=0x%02x, stream_id=%d>\n", hd.length,
-          hd.flags, hd.stream_id);
+  fprintf(outfile, "<length=%zu, flags=0x%02x, stream_id=%d>\r\n\r\n", hd.length, hd.flags, hd.stream_id);
 }
 } // namespace
 

@@ -32,8 +32,10 @@
 #include <nghttp2/nghttp2.h>
 
 #ifdef DEBUGBUILD
-#define DEBUGF(...) nghttp2_debug_vprintf(__VA_ARGS__)
-void nghttp2_debug_vprintf(const char *format, ...);
+//#define ngx_log_debug(level, log, ...)                                         ngx_log_error_core(NGX_LOG_DEBUG, log, __VA_ARGS__)
+
+#define DEBUGF(...) nghttp2_debug_vprintf(__FUNCTION__, __LINE__, __VA_ARGS__)
+void nghttp2_debug_vprintf(const char* filename, int lineno,const char *format, ...);
 #else
 #define DEBUGF(...)                                                            \
   do {                                                                         \
