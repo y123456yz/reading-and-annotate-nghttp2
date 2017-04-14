@@ -94,6 +94,13 @@ struct Config { /* 该Config对应的全局配置在nghttp.cc中初始化 */
   ~Config();
 
   Headers headers; //config.headers中存储的是-H 指定的头部行信息
+  //命令行携带指定
+  /*
+  --trailer=<HEADER>
+                Add a trailer header to the requests.  <HEADER> must not
+                with ':').  To  send trailer, one must use  -d option to
+                send request body.  Example: --trailer 'foo: bar'.
+  */
   Headers trailer;
   std::vector<int32_t> weight; //默认NGHTTP2_DEFAULT_WEIGHT
   std::string certfile;
@@ -200,7 +207,7 @@ struct Request {
 
   Headers res_nva;
   Headers req_nva;
-  std::string method;
+  std::string method; //GET还是POST，赋值见submit_request
   // URI without fragment
   std::string uri;
   http_parser_url u;
@@ -212,7 +219,7 @@ struct Request {
   int64_t response_len;
   nghttp2_gzip *inflater;
   std::unique_ptr<HtmlParser> html_parser;
-  const nghttp2_data_provider *data_prd;
+  const nghttp2_data_provider *data_prd; //-d指定上传某个文件，则method为POST，否则为GET，见submit_request
   size_t header_buffer_size;
   int32_t stream_id;
   int status;
@@ -292,8 +299,8 @@ struct HttpClient {
 
   MemchunkPool mcpool;
   DefaultMemchunks wb;
-  //add_request赋值 communicate->add_request中赋值中调用   
-  std::vector<std::unique_ptr<Request>> reqvec; 
+  //add_request赋值 communicate->add_request中赋值中调用    存储url等信息
+  std::vector<std::unique_ptr<Request>> reqvec;  
   // Insert path already added in reqvec to prevent multiple request
   // for 1 resource.
   std::set<std::string> path_cache;
@@ -317,8 +324,8 @@ struct HttpClient {
   SSL_CTX *ssl_ctx;
   SSL *ssl;
   //服务端地址信息，赋值见resolve_host
-  addrinfo *addrs;
-  addrinfo *next_addr;
+  addrinfo *addrs; 
+  addrinfo *next_addr; //从HttpClient::resolve_host解析域名获取到服务端地址信息
   addrinfo *cur_addr;
   // The number of completed requests, including failed ones.
   size_t complete;

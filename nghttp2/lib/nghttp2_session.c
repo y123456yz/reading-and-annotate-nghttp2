@@ -816,9 +816,13 @@ int nghttp2_session_reprioritize_stream(
   return 0;
 }
 
+//HTTP2各个帧数据发送在函数nghttp2_session_mem_send_internal   各种帧入队到nghttp2_session的对应队列在nghttp2_session_add_item 各种帧的头部填充见nghttp2_frame_hd_init
+
+//HTTP2各个帧数据发送在函数nghttp2_session_mem_send_internal   各种帧入队到nghttp2_session的对应队列在nghttp2_session_add_item
+
 //frame通用头部信息，头部填充见nghttp2_frame_hd_init  数据填充后挂接队列见nghttp2_session_add_item
 int nghttp2_session_add_item(nghttp2_session *session,
-                             nghttp2_outbound_item *item) { //item代表帧信息
+                             nghttp2_outbound_item *item) { //item代表帧信息  
   /* TODO Return error if stream is not found for the frame requiring
      stream presence. */
   int rv = 0;
@@ -2864,9 +2868,11 @@ static int session_call_send_data(nghttp2_session *session,
   }
 }
 
+//HTTP2各个帧数据发送在函数nghttp2_session_mem_send_internal   各种帧入队到nghttp2_session的对应队列在nghttp2_session_add_item 各种帧的头部填充见nghttp2_frame_hd_init
+//HTTP2各个帧数据发送在函数nghttp2_session_mem_send_internal
 static ssize_t nghttp2_session_mem_send_internal(nghttp2_session *session,
                                                  const uint8_t **data_ptr,
-                                                 int fast_cb) {
+                                                 int fast_cb) { //nghttp从nghttp2_session_mem_send调用该接口
   int rv;
   nghttp2_active_outbound_item *aob;
   nghttp2_bufs *framebufs;
@@ -3185,6 +3191,7 @@ ssize_t nghttp2_session_mem_send(nghttp2_session *session,
   int rv;
   ssize_t len;
 
+  
   *data_ptr = NULL;
 
   len = nghttp2_session_mem_send_internal(session, data_ptr, 1);

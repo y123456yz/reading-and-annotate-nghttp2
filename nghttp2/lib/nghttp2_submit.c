@@ -61,6 +61,7 @@ static int detect_self_dependency(nghttp2_session *session, int32_t stream_id,
   return 0;
 }
 
+//生成header帧并加入到指定的session->ob_syn队列
 /* This function takes ownership of |nva_copy|. Regardless of the
    return value, the caller must not free |nva_copy| after this
    function returns. */
@@ -117,7 +118,8 @@ static int32_t submit_headers_shared(nghttp2_session *session, uint8_t flags,
   nghttp2_frame_headers_init(&frame->headers, flags_copy, stream_id, hcat,
                              pri_spec, nva_copy, nvlen);
 
-  rv = nghttp2_session_add_item(session, item);
+  //生成header帧并加入到指定的session->ob_syn队列
+  rv = nghttp2_session_add_item(session, item); //生成header帧并加入到指定的session->ob_syn队列
 
   if (rv != 0) {
     nghttp2_frame_headers_free(&frame->headers, mem);
@@ -139,6 +141,7 @@ fail2:
   return rv;
 }
 
+//生成header帧并加入到指定的session->ob_syn队列
 static int32_t submit_headers_shared_nva(nghttp2_session *session,
                                          uint8_t flags, int32_t stream_id,
                                          const nghttp2_priority_spec *pri_spec,
@@ -164,6 +167,7 @@ static int32_t submit_headers_shared_nva(nghttp2_session *session,
     return rv;
   }
 
+  //生成header帧并加入到指定的session->ob_syn队列
   return submit_headers_shared(session, flags, stream_id, &copy_pri_spec,
                                nva_copy, nvlen, data_prd, stream_user_data);
 }
@@ -179,6 +183,7 @@ int nghttp2_submit_trailer(nghttp2_session *session, int32_t stream_id,
                                         NULL);
 }
 
+//生成header帧并加入到指定的session->ob_syn队列
 int32_t nghttp2_submit_headers(nghttp2_session *session, uint8_t flags,
                                int32_t stream_id,
                                const nghttp2_priority_spec *pri_spec,

@@ -434,6 +434,7 @@ constexpr http_parser_settings htp_hooks = {
 } // namespace
 
 namespace {
+//生成header帧并加入到指定的session->ob_syn队列
 int submit_request(HttpClient *client, const Headers &headers, Request *req) {
   auto path = req->make_reqpath();
   auto scheme = util::get_uri_field(req->uri.c_str(), req->u, UF_SCHEMA);
@@ -453,9 +454,9 @@ int submit_request(HttpClient *client, const Headers &headers, Request *req) {
     }
   }
 
-  auto num_initial_headers = build_headers.size();
+  auto num_initial_headers = build_headers.size(); //头部帧中携带的标识符个数
 
-  if (req->data_prd) {
+  if (req->data_prd) { //-D指定上传文件，则method为POST，否则为GET
     if (!config.no_content_length) {
       build_headers.emplace_back("content-length",
                                  util::utos(req->data_length));
@@ -466,7 +467,7 @@ int submit_request(HttpClient *client, const Headers &headers, Request *req) {
     }
   }
 
-  for (auto &kv : headers) {
+  for (auto &kv : headers) { //如果运行nghttp的时候在参数行指定了对应的header信息，则还是以参数行为准
     size_t i;
     for (i = 0; i < num_initial_headers; ++i) {
       if (kv.name == build_headers[i].name) {
@@ -478,23 +479,24 @@ int submit_request(HttpClient *client, const Headers &headers, Request *req) {
       continue;
     }
 
-    build_headers.emplace_back(kv.name, kv.value, kv.no_index);
+    build_headers.emplace_back(kv.name, kv.value, kv.no_index); //把默认的header替换为参数行指定的
   }
-
+	
   auto nva = std::vector<nghttp2_nv>();
-  nva.reserve(build_headers.size());
+  nva.reserve(build_headers.size());//reserver函数用来给vector预分配存储区大小，即capacity的值 
 
   for (auto &kv : build_headers) {
+  	//把headers信息拷贝到nva中
     nva.push_back(http2::make_nv(kv.name, kv.value, kv.no_index));
   }
 
-  auto method = http2::get_header(build_headers, ":method");
+  auto method = http2::get_header(build_headers, ":method"); //POST还是GET
   assert(method);
 
   req->method = method->value;
 
   std::string trailer_names;
-  if (!config.trailer.empty()) {
+  if (!config.trailer.empty()) {//命令行指定携带
     trailer_names = config.trailer[0].name;
     for (size_t i = 1; i < config.trailer.size(); ++i) {
       trailer_names += ", ";
@@ -509,6 +511,7 @@ int submit_request(HttpClient *client, const Headers &headers, Request *req) {
     stream_id = nghttp2_submit_headers(client->session, 0, -1, &req->pri_spec,
                                        nva.data(), nva.size(), req);
   } else {
+  	//生成header帧并加入到指定的session->ob_syn队列
     stream_id =
         nghttp2_submit_request(client->session, &req->pri_spec, nva.data(),
                                nva.size(), req->data_prd, req);
@@ -1232,6 +1235,7 @@ int HttpClient::connection_made() {
   // data
   for (auto i = std::begin(reqvec) + (need_upgrade() && !reqvec[0]->data_prd);
        i != std::end(reqvec); ++i) {
+	//生成header帧并加入到指定的session->ob_syn队列
     if (submit_request(this, config.headers, (*i).get()) != 0) {
       return -1;
     }
@@ -1437,6 +1441,7 @@ void HttpClient::update_hostport() {
   hostport = ss.str();
 }
 
+//这里的前面三个参数分别对应url  -d参数指定上传的文件的fd   -d参数指定要上传文件的size大小
 //update_html_parser   communicate->add_request中赋值中调用   
 bool HttpClient::add_request(const std::string &uri,
                              const nghttp2_data_provider *data_prd,
@@ -1454,6 +1459,7 @@ bool HttpClient::add_request(const std::string &uri,
     path_cache.insert(uri);
   }
 
+  //添加到HttpClient.reqvec成员
   reqvec.push_back(
       make_unique<Request>(uri, u, data_prd, data_length, pri_spec, level));
   return true;
@@ -2252,11 +2258,12 @@ int client_select_next_proto_cb(SSL *ssl, unsigned char **out,
 } // namespace
 
 namespace {
+
 int communicate(
     const std::string &scheme, const std::string &host, uint16_t port,
     std::vector<
         std::tuple<std::string, nghttp2_data_provider *, int64_t, int32_t>>
-        requests, //requests存储uri信息
+        requests, //requests这里的三个参数分别对应url  -d参数指定上传的文件的fd   -d参数指定要上传文件的size大小
     const nghttp2_session_callbacks *callbacks) {
   int result = 0;
   auto loop = EV_DEFAULT; //ev_default_loop
@@ -2341,6 +2348,7 @@ int communicate(
 
 	  
       for (int i = 0; i < config.multiply; ++i) {
+	  	//req这里的三个参数分别对应url  -d参数指定上传的文件的fd   -d参数指定要上传文件的size大小
         client.add_request(std::get<0>(req), std::get<1>(req), std::get<2>(req),
                            pri_spec);
       }
@@ -2356,7 +2364,7 @@ int communicate(
     client.record_domain_lookup_end_time();
 
 	//HttpClient.initiate_connection  epoll读写回调函数也在该接口中赋值
-    if (client.initiate_connection() != 0) {//向服务端发起连接
+    if (client.initiate_connection() != 0) {//向服务端发起连接   连接建立后调用HttpClient::connection_made()
       std::cerr << "[ERROR] Could not connect to " << host << ", port " << port
                 << std::endl;
       goto fin;
@@ -2579,7 +2587,7 @@ int run(char **uris, int n) {
 
   std::vector<
       std::tuple<std::string, nghttp2_data_provider *, int64_t, int32_t>>
-      requests; //std::tuple为C++11新标准  存储uri信息
+      requests; //std::tuple为C++11新标准  存储uri信息    这里的三个参数分别对应url  -d参数指定上传的文件的fd   -d参数指定要上传文件的size大小
 
   size_t next_weight_idx = 0;
 
@@ -2619,6 +2627,7 @@ int run(char **uris, int n) {
       prev_host = std::move(host);
       prev_port = port;
     }
+	// 这里的三个参数分别对应url  -d参数指定上传的文件的fd   -d参数指定要上传文件的size大小
 	requests.emplace_back(uri, data_fd == -1 ? nullptr : &data_prd, //
                           data_stat.st_size, config.weight[next_weight_idx++]);
   }

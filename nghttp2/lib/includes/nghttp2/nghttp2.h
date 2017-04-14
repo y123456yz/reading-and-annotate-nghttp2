@@ -503,7 +503,7 @@ typedef enum {
  * @struct
  *
  * The name/value pair, which mainly used to represent header fields.
- */
+ */ //name:value对信息
 typedef struct {
   /**
    * The |name| byte string.  If this struct is presented from library
@@ -549,7 +549,8 @@ typedef struct {
  * @enum
  *
  * The frame types in HTTP/2 specification.
- */
+ */ 
+ //HTTP2各个帧数据发送在函数nghttp2_session_mem_send_internal   各种帧入队到nghttp2_session的对应队列在nghttp2_session_add_item 各种帧的头部填充见nghttp2_frame_hd_init
 typedef enum { //各种帧的头部填充见nghttp2_frame_hd_init
   /**
    * The DATA frame.
@@ -630,7 +631,7 @@ typedef enum {
   /**
    * The PRIORITY flag.
    */
-  NGHTTP2_FLAG_PRIORITY = 0x20
+  NGHTTP2_FLAG_PRIORITY = 0x20  //优先级帧需要携带该参数
 } nghttp2_flag;
 
 /**
@@ -767,7 +768,7 @@ typedef enum {
 /**
  * @struct
  * The frame header.
- */
+ */ //HTTP2各个帧数据发送在函数nghttp2_session_mem_send_internal
 typedef struct { //frame通用头部信息，头部填充见nghttp2_frame_hd_init  数据填充后挂接队列见nghttp2_session_add_item
   /**
    * The length field of this frame, excluding frame header.
@@ -911,7 +912,7 @@ typedef struct {
   /**
    * The data source.
    */
-  nghttp2_data_source source;
+  nghttp2_data_source source; //启动nghttp携带-d参数指定文件才有用
   /**
    * The callback function to read a chunk of data from the |source|.
    */
@@ -1674,7 +1675,7 @@ Stream Identifier若为0x0，则表示针对整个连接，否则针对具体流
  * calls as nghttp2_frame type.  The CONTINUATION frame is omitted
  * from here because the library deals with it internally.
  */ 
- //nghttp2_frame.frame
+ //nghttp2_frame.frame  HTTP2各个帧数据发送在函数nghttp2_session_mem_send_internal
 typedef union {
   /**
    * The frame header, which is convenient to inspect frame header.

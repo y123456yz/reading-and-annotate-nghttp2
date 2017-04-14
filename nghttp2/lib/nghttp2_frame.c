@@ -59,6 +59,7 @@ void nghttp2_frame_unpack_frame_hd(nghttp2_frame_hd *hd, const uint8_t *buf) {
 |R|                Stream Identifier (31)                       |
 +=+=============================================================+
 */
+//HTTP2各个帧数据发送在函数nghttp2_session_mem_send_internal   各种帧入队到nghttp2_session的对应队列在nghttp2_session_add_item 各种帧的头部填充见nghttp2_frame_hd_init
 //各种帧的头部填充，type是帧类型 //frame通用头部信息，头部填充见nghttp2_frame_hd_init  数据填充后挂接队列见nghttp2_session_add_item
 void nghttp2_frame_hd_init(nghttp2_frame_hd *hd, size_t length, uint8_t type,
                            uint8_t flags, int32_t stream_id) {
@@ -830,6 +831,7 @@ void nghttp2_nv_array_sort(nghttp2_nv *nva, size_t nvlen) {
   qsort(nva, nvlen, sizeof(nghttp2_nv), nv_compar);
 }
 
+//拷贝nva信息到nva_ptr中，并通过nva_ptr返回
 int nghttp2_nv_array_copy(nghttp2_nv **nva_ptr, const nghttp2_nv *nva,
                           size_t nvlen, nghttp2_mem *mem) {
   size_t i;
