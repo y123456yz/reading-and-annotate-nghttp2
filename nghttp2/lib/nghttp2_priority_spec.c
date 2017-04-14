@@ -43,6 +43,7 @@ int nghttp2_priority_spec_check_default(const nghttp2_priority_spec *pri_spec) {
          pri_spec->weight == NGHTTP2_DEFAULT_WEIGHT && pri_spec->exclusive == 0;
 }
 
+//权重范围规范化
 void nghttp2_priority_spec_normalize_weight(nghttp2_priority_spec *pri_spec) {
   if (pri_spec->weight < NGHTTP2_MIN_WEIGHT) {
     pri_spec->weight = NGHTTP2_MIN_WEIGHT;

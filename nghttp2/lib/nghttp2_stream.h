@@ -171,7 +171,7 @@ struct nghttp2_stream {
   nghttp2_stream *closed_prev, *closed_next;
   /* The arbitrary data provided by user for this stream. */
   void *stream_user_data;
-  /* Item to send */ //该stream对应的item,赋值见nghttp2_stream_attach_item
+  /* Item to send */   //赋值参考nghttp2_stream_attach_item
   nghttp2_outbound_item *item;
   /* Last written length of frame payload */
   size_t last_writelen;

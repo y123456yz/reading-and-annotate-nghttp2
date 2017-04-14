@@ -1704,6 +1704,7 @@ int Http2Session::connection_made() {
     ++nentry;
   }
 
+  //setting帧入队session->ob_urgent队列
   rv = nghttp2_submit_settings(session_, NGHTTP2_FLAG_NONE, entry.data(),
                                nentry);
   if (rv != 0) {

@@ -476,6 +476,7 @@ static int stream_update_dep_on_detach_item(nghttp2_stream *stream) {
   return 0;
 }
 
+//DATA数据帧入队
 int nghttp2_stream_attach_item(nghttp2_stream *stream,
                                nghttp2_outbound_item *item) {
   int rv;

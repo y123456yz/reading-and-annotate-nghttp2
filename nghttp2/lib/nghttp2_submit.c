@@ -251,9 +251,10 @@ int nghttp2_submit_priority(nghttp2_session *session, uint8_t flags,
 
   frame = &item->frame;
 
+  //优先级帧头部填充
   nghttp2_frame_priority_init(&frame->priority, stream_id, &copy_pri_spec);
 
-  rv = nghttp2_session_add_item(session, item);
+  rv = nghttp2_session_add_item(session, item);//优先级帧挂接到对应队列
 
   if (rv != 0) {
     nghttp2_frame_priority_free(&frame->priority);
@@ -301,6 +302,7 @@ int nghttp2_submit_shutdown_notice(nghttp2_session *session) {
                                     NGHTTP2_GOAWAY_AUX_SHUTDOWN_NOTICE);
 }
 
+//setting帧入队session->ob_urgent队列
 int nghttp2_submit_settings(nghttp2_session *session, uint8_t flags,
                             const nghttp2_settings_entry *iv, size_t niv) {
   (void)flags;

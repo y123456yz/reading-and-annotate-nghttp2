@@ -99,6 +99,7 @@ void nghttp2_outbound_queue_init(nghttp2_outbound_queue *q) {
   q->n = 0;
 }
 
+//把item添加到q队列尾部
 void nghttp2_outbound_queue_push(nghttp2_outbound_queue *q,
                                  nghttp2_outbound_item *item) {
   if (q->tail) {

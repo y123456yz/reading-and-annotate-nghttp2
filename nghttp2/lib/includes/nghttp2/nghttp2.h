@@ -212,7 +212,7 @@ typedef struct {
  *
  * The client magic string, which is the first 24 bytes byte string of
  * client connection preface.
- */
+ */ //http2 连接需要，到对端的第一个报文必须已它开头
 #define NGHTTP2_CLIENT_MAGIC "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
 
 /**
@@ -550,7 +550,7 @@ typedef struct {
  *
  * The frame types in HTTP/2 specification.
  */
-typedef enum {
+typedef enum { //各种帧的头部填充见nghttp2_frame_hd_init
   /**
    * The DATA frame.
    */
@@ -606,7 +606,7 @@ typedef enum {
  * The flags for HTTP/2 frames.  This enum defines all flags for all
  * frames.
  */
-typedef enum {
+typedef enum { 
   /**
    * No flag set.
    */
@@ -768,7 +768,7 @@ typedef enum {
  * @struct
  * The frame header.
  */
-typedef struct { //frame通用头部信息
+typedef struct { //frame通用头部信息，头部填充见nghttp2_frame_hd_init  数据填充后挂接队列见nghttp2_session_add_item
   /**
    * The length field of this frame, excluding frame header.
    */
@@ -971,7 +971,17 @@ typedef enum {
  * @struct
  *
  * The structure to specify stream dependency.
- */
+ */ 
+/*
+E : 一位的标记，指示流的依赖是专有的，见章节5.3
+Stream Dependency ： 标识流所依赖的流的31位流标识符，见章节5.3
+Weight: 流的依赖的的权重(8位)，见章节5.3。添加一个1-256的权重值。
+
+所有有依赖的流都会被分配一个1-256(含)的整数来标识权重。
+具有相同父节点的流应该根据权重比例来分配资源。因此，如果B流依赖流A的权重是4，C流依赖A流的权重是12，
+那么如果A流上不会有进展了，B流理论上将获取到相对于C流资源的三分之一。
+*/ //注意nghttp2_priority_spec 和 Anchor,一般nghttp2_priority_spec成员是从Anchor中获取 ，见nghttp2_priority_spec_init
+ //stream依赖结构包括stream ID、权重、以及是否独有
 typedef struct {
   /**
    * The stream ID of the stream to depend on.  Specifying 0 makes
@@ -1034,7 +1044,7 @@ typedef struct {
   /**
    * The priority specification.
    */
-  nghttp2_priority_spec pri_spec;
+  nghttp2_priority_spec pri_spec; //优先级帧数据部分，赋值见nghttp2_frame_priority_init
 } nghttp2_priority;
 
 /**

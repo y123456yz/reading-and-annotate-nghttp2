@@ -186,24 +186,25 @@ struct nghttp2_inflight_settings {
   size_t niv;
 };
 typedef struct nghttp2_inflight_settings nghttp2_inflight_settings;
-
-//创建对应的空间见nghttp2_session_client_new2
+ 
+//创建对应的空间见nghttp2_session_client_new2->session_new  //创建nghttp2_session并初始化
 struct nghttp2_session {
   //所有的stream存入该map表中，参考nghttp2_session_get_stream
   nghttp2_map /* <nghttp2_stream*> */ streams;
   /* root of dependency tree*/
   nghttp2_stream root;
   /* Queue for outbound urgent frames (PING and SETTINGS) */
-  nghttp2_outbound_queue ob_urgent;
+  nghttp2_outbound_queue ob_urgent; //PING帧和SETTING帧信息挂到ob_urgent队列
   /* Queue for non-DATA frames */
-  nghttp2_outbound_queue ob_reg;
+  nghttp2_outbound_queue ob_reg; // RST_STREAM挂到该队列
   /* Queue for outbound stream-creating HEADERS (request or push
      response) frame, which are subject to
      SETTINGS_MAX_CONCURRENT_STREAMS limit. */
   nghttp2_outbound_queue ob_syn;
+  //序言MAGIC NGHTTP2_CLIENT_MAGIC赋值，存入这里面
   nghttp2_active_outbound_item aob;
   nghttp2_inbound_frame iframe;
-  nghttp2_hd_deflater hd_deflater;
+  nghttp2_hd_deflater hd_deflater; //HASH
   nghttp2_hd_inflater hd_inflater;
   nghttp2_session_callbacks callbacks;
   /* Memory allocator */
@@ -267,7 +268,7 @@ struct nghttp2_session {
      same way as nghttp2_hd_deflate_bound() does. */
   size_t max_send_header_block_length;
   /* Next Stream ID. Made unsigned int to detect >= (1 << 31). */
-  uint32_t next_stream_id;
+  uint32_t next_stream_id; //赋值见nghttp2_session_set_next_stream_id
   /* The last stream ID this session initiated.  For client session,
      this is the last stream ID it has sent.  For server session, it
      is the last promised stream ID sent in PUSH_PROMISE. */

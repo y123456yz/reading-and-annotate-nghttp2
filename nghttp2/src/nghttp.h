@@ -58,6 +58,37 @@ namespace nghttp2 {
 
 class HtmlParser;
 
+/*
+Config::Config()
+    : header_table_size(-1),
+      min_header_table_size(std::numeric_limits<uint32_t>::max()),
+      encoder_header_table_size(-1),
+      padding(0),
+      max_concurrent_streams(100),
+      peer_max_concurrent_streams(100),
+      multiply(1),
+      timeout(0.),
+      window_bits(-1),
+      connection_window_bits(-1),
+      verbose(0),
+      port_override(0),
+      null_out(false),
+      remote_name(false),
+      get_assets(false),
+      stat(false),
+      upgrade(false),
+      continuation(false),
+      no_content_length(false),
+      no_dep(false),
+      hexdump(false),
+      no_push(false),
+      expect_continue(false) {
+  nghttp2_option_new(&http2_option); //http2_option成员malloc开辟空间
+  nghttp2_option_set_peer_max_concurrent_streams(http2_option,
+                                                 peer_max_concurrent_streams);
+  nghttp2_option_set_builtin_recv_extension_type(http2_option, NGHTTP2_ALTSVC);
+} //构造函数初始化
+*/
 struct Config { /* 该Config对应的全局配置在nghttp.cc中初始化 */
   Config();
   ~Config();
@@ -96,7 +127,7 @@ struct Config { /* 该Config对应的全局配置在nghttp.cc中初始化 */
   bool upgrade;
   bool continuation;
   bool no_content_length;
-  bool no_dep;
+  bool no_dep; //默认false
   bool hexdump;
   bool no_push;
   bool expect_continue;
@@ -261,7 +292,8 @@ struct HttpClient {
 
   MemchunkPool mcpool;
   DefaultMemchunks wb;
-  std::vector<std::unique_ptr<Request>> reqvec;
+  //add_request赋值 communicate->add_request中赋值中调用   
+  std::vector<std::unique_ptr<Request>> reqvec; 
   // Insert path already added in reqvec to prevent multiple request
   // for 1 resource.
   std::set<std::string> path_cache;

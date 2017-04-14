@@ -50,6 +50,16 @@ void nghttp2_frame_unpack_frame_hd(nghttp2_frame_hd *hd, const uint8_t *buf) {
   hd->reserved = 0;
 }
 
+/*
++-----------------------------------------------+
+|                Length (24)                    |
++---------------+---------------+---------------+
+|  Type (8)     |  Flags (8)    |
++-+-------------+---------------+-------------------------------+
+|R|                Stream Identifier (31)                       |
++=+=============================================================+
+*/
+//各种帧的头部填充，type是帧类型 //frame通用头部信息，头部填充见nghttp2_frame_hd_init  数据填充后挂接队列见nghttp2_session_add_item
 void nghttp2_frame_hd_init(nghttp2_frame_hd *hd, size_t length, uint8_t type,
                            uint8_t flags, int32_t stream_id) {
   hd->length = length;
@@ -80,6 +90,7 @@ void nghttp2_frame_headers_free(nghttp2_headers *frame, nghttp2_mem *mem) {
   nghttp2_nv_array_del(frame->nva, mem);
 }
 
+//优先级帧头部填充
 void nghttp2_frame_priority_init(nghttp2_priority *frame, int32_t stream_id,
                                  const nghttp2_priority_spec *pri_spec) {
   nghttp2_frame_hd_init(&frame->hd, NGHTTP2_PRIORITY_SPECLEN, NGHTTP2_PRIORITY,

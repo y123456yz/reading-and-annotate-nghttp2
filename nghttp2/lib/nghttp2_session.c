@@ -383,11 +383,13 @@ static void active_outbound_item_reset(nghttp2_active_outbound_item *aob,
 
 int nghttp2_enable_strict_preface = 1;
 
+//创建nghttp2_session并初始化   server指定本端是否服务端
 static int session_new(nghttp2_session **session_ptr,
                        const nghttp2_session_callbacks *callbacks,
-                       void *user_data, int server,
+                       void *user_data, int server, 
                        const nghttp2_option *option, nghttp2_mem *mem) {
   int rv;
+  DEBUGF("session new\n");
   size_t nbuffer;
   size_t max_deflate_dynamic_table_size =
       NGHTTP2_HD_DEFAULT_MAX_DEFLATE_BUFFER_SIZE;
@@ -550,7 +552,7 @@ static int session_new(nghttp2_session **session_ptr,
       iframe->state = NGHTTP2_IB_READ_FIRST_SETTINGS;
     }
 
-    if (!server) {
+    if (!server) { //本端是客户端，则记录下连接序言MAGIC NGHTTP2_CLIENT_MAGIC
       (*session_ptr)->aob.state = NGHTTP2_OB_SEND_CLIENT_MAGIC;
       nghttp2_bufs_add(&(*session_ptr)->aob.framebufs, NGHTTP2_CLIENT_MAGIC,
                        NGHTTP2_CLIENT_MAGIC_LEN);
@@ -814,8 +816,9 @@ int nghttp2_session_reprioritize_stream(
   return 0;
 }
 
+//frame通用头部信息，头部填充见nghttp2_frame_hd_init  数据填充后挂接队列见nghttp2_session_add_item
 int nghttp2_session_add_item(nghttp2_session *session,
-                             nghttp2_outbound_item *item) {
+                             nghttp2_outbound_item *item) { //item代表帧信息
   /* TODO Return error if stream is not found for the frame requiring
      stream presence. */
   int rv = 0;
@@ -827,7 +830,7 @@ int nghttp2_session_add_item(nghttp2_session *session,
 
   switch (frame->hd.type) {
   case NGHTTP2_DATA:
-    if (!stream) { //发送DATA帧前必须提前stream必须已经存在
+    if (!stream) { //发送DATA帧前stream必须已经存在
       return NGHTTP2_ERR_STREAM_CLOSED;
     }
 
@@ -861,7 +864,7 @@ int nghttp2_session_add_item(nghttp2_session *session,
     item->queued = 1;
     return 0;
   case NGHTTP2_SETTINGS:
-  case NGHTTP2_PING:
+  case NGHTTP2_PING: //PING帧和SETTING帧信息挂到ob_urgent队列
     nghttp2_outbound_queue_push(&session->ob_urgent, item);
     item->queued = 1;
     return 0;
@@ -6744,6 +6747,7 @@ int nghttp2_session_add_window_update(nghttp2_session *session, uint8_t flags,
   return 0;
 }
 
+//把settings添加到session->inflight_settings_head尾部
 static void
 session_append_inflight_settings(nghttp2_session *session,
                                  nghttp2_inflight_settings *settings) {
@@ -6755,6 +6759,7 @@ session_append_inflight_settings(nghttp2_session *session,
   *i = settings;
 }
 
+//setting帧入队session->ob_urgent队列
 int nghttp2_session_add_settings(nghttp2_session *session, uint8_t flags,
                                  const nghttp2_settings_entry *iv, size_t niv) {
   nghttp2_outbound_item *item;
@@ -6812,6 +6817,7 @@ int nghttp2_session_add_settings(nghttp2_session *session, uint8_t flags,
   frame = &item->frame; //
 
   nghttp2_frame_settings_init(&frame->settings, flags, iv_copy, niv);
+  //SETTING帧信息挂到session->ob_urgent队列
   rv = nghttp2_session_add_item(session, item);
   if (rv != 0) {
     /* The only expected error is fatal one */
@@ -6828,6 +6834,7 @@ int nghttp2_session_add_settings(nghttp2_session *session, uint8_t flags,
   if (flags & NGHTTP2_FLAG_ACK) {
     ++session->obq_flood_counter_;
   } else {
+    //添加inflight_settings到session->inflight_settings_head尾部
     session_append_inflight_settings(session, inflight_settings);
   }
 

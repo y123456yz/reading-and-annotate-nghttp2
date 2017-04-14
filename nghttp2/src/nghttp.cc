@@ -69,6 +69,7 @@ namespace nghttp2 {
 // The anchor stream nodes when --no-dep is not used.  The stream ID =
 // 1 is excluded since it is used as first stream in upgrade case.  We
 // follows the same dependency anchor nodes as Firefox does.
+//注意nghttp2_priority_spec 和 Anchor,一般nghttp2_priority_spec成员是从Anchor中获取 ，见nghttp2_priority_spec_init
 struct Anchor { //见constexpr auto anchors
   int32_t stream_id;
   // stream ID this anchor depends on
@@ -79,7 +80,7 @@ struct Anchor { //见constexpr auto anchors
 
 // This is index into anchors.  Firefox uses ANCHOR_FOLLOWERS for html
 // file.
-enum {
+enum { //下面的constexpr auto anchors 坐标
   ANCHOR_LEADERS,
   ANCHOR_UNBLOCKED,
   ANCHOR_BACKGROUND,
@@ -88,7 +89,8 @@ enum {
 };
 
 namespace {
-constexpr auto anchors = std::array<Anchor, 5>{{
+//{}中依次是stream id, 依赖的stream，权重
+constexpr auto anchors = std::array<Anchor, 5>{{ //数组元素坐标见上面的ANCHOR_FOLLOWERS
     {3, 0, 201}, {5, 0, 101}, {7, 0, 1}, {9, 7, 1}, {11, 3, 1},
 }};
 } // namespace
@@ -1125,7 +1127,7 @@ int HttpClient::connection_made() {
     }
   }
 
-  //session空间赋值
+  //session空间赋值,创建session
   rv = nghttp2_session_client_new2(&session, callbacks, this,
                                    config.http2_option);
 
@@ -1160,18 +1162,21 @@ int HttpClient::connection_made() {
   // HTTP2-Settings header field has already been submitted to
   // session object.
   if (!need_upgrade()) {
+  	//setting帧填充
     std::array<nghttp2_settings_entry, 16> iv;
     auto niv = populate_settings(iv.data()); //setting帧各种标识符填充
+    //setting帧入队session->ob_urgent队列
     rv = nghttp2_submit_settings(session, NGHTTP2_FLAG_NONE, iv.data(), niv);
     if (rv != 0) {
       return -1;
     }
   }
-  if (!config.no_dep) {
+  if (!config.no_dep) { //--no-dep    Don't send dependency based priority hint to server.
     // Create anchor stream nodes
     nghttp2_priority_spec pri_spec;
 
-    for (auto &anchor : anchors) {
+    for (auto &anchor : anchors) { //把anchors数组中的信息组成优先级帧格式挂载到session对应的队列
+	  //拷贝
       nghttp2_priority_spec_init(&pri_spec, anchor.dep_stream_id, anchor.weight,
                                  0);
       rv = nghttp2_submit_priority(session, NGHTTP2_FLAG_NONE, anchor.stream_id,
@@ -1432,6 +1437,7 @@ void HttpClient::update_hostport() {
   hostport = ss.str();
 }
 
+//update_html_parser   communicate->add_request中赋值中调用   
 bool HttpClient::add_request(const std::string &uri,
                              const nghttp2_data_provider *data_prd,
                              int64_t data_length,
@@ -1681,6 +1687,7 @@ void update_html_parser(HttpClient *client, Request *req, const uint8_t *data,
     // No POST data for assets
     auto pri_spec = resolve_dep(res_type);
 
+	//update_html_parser中
     if (client->add_request(uri, nullptr, 0, pri_spec, req->level + 1)) {
       submit_request(client, config.headers, client->reqvec.back().get());
     }
@@ -2332,6 +2339,7 @@ int communicate(
 	  //std::get<>获取tuple中某个位置元素
       nghttp2_priority_spec_init(&pri_spec, dep_stream_id, std::get<3>(req), 0);
 
+	  
       for (int i = 0; i < config.multiply; ++i) {
         client.add_request(std::get<0>(req), std::get<1>(req), std::get<2>(req),
                            pri_spec);
