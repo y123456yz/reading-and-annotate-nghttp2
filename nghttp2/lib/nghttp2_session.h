@@ -258,7 +258,7 @@ struct nghttp2_session {
      streams can be accessed through doubly linked list
      |idle_stream_head|.  The current implementation only keeps idle
      streams if session is initialized as server. */
-  size_t num_idle_streams;
+  size_t num_idle_streams; //idle streamÊý
   /* The number of bytes allocated for nvbuf */
   size_t nvbuflen;
   /* Counter for detecting flooding in outbound queue */

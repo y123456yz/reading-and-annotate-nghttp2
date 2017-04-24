@@ -370,6 +370,7 @@ static void init_settings(nghttp2_settings_storage *settings) {
   settings->max_header_list_size = UINT32_MAX;
 }
 
+//把连接需要写入网络发送内存块后，把状态置为NGHTTP2_OB_POP_ITEM，可以开始发送帧信息了
 static void active_outbound_item_reset(nghttp2_active_outbound_item *aob,
                                        nghttp2_mem *mem) {
   DEBUGF("send: reset nghttp2_active_outbound_item\n");
@@ -1347,6 +1348,7 @@ int nghttp2_session_adjust_closed_stream(nghttp2_session *session) {
   return 0;
 }
 
+//idle stream超过阈值，释放掉头部的idle stream信息
 int nghttp2_session_adjust_idle_stream(nghttp2_session *session) {
   size_t max;
   int rv;
@@ -1361,7 +1363,7 @@ int nghttp2_session_adjust_idle_stream(nghttp2_session *session) {
   DEBUGF("stream: adjusting kept idle streams num_idle_streams=%zu, max=%zu\n",
          session->num_idle_streams, max);
 
-  while (session->num_idle_streams > max) {
+  while (session->num_idle_streams > max) { //idle stream超过阈值，释放掉头部的idle stream信息
     nghttp2_stream *head;
     nghttp2_stream *next;
 
@@ -2319,6 +2321,7 @@ nghttp2_session_get_next_ob_item(nghttp2_session *session) {
   return NULL;
 }
 
+//把各种帧信息从各自的nghttp2_session队列上弹出来
 nghttp2_outbound_item *
 nghttp2_session_pop_next_ob_item(nghttp2_session *session) {
   nghttp2_outbound_item *item;
@@ -2870,6 +2873,7 @@ static int session_call_send_data(nghttp2_session *session,
 
 //HTTP2各个帧数据发送在函数nghttp2_session_mem_send_internal   各种帧入队到nghttp2_session的对应队列在nghttp2_session_add_item 各种帧的头部填充见nghttp2_frame_hd_init
 //HTTP2各个帧数据发送在函数nghttp2_session_mem_send_internal
+//该函数组帧，然后加入到 wb内存块中,见HttpClient::on_write
 static ssize_t nghttp2_session_mem_send_internal(nghttp2_session *session,
                                                  const uint8_t **data_ptr,
                                                  int fast_cb) { //nghttp从nghttp2_session_mem_send调用该接口
@@ -2885,16 +2889,18 @@ static ssize_t nghttp2_session_mem_send_internal(nghttp2_session *session,
   /* We may have idle streams more than we expect (e.g.,
      nghttp2_session_change_stream_priority() or
      nghttp2_session_create_idle_stream()).  Adjust them here. */
+  //idle stream超过阈值，释放掉头部的idle stream信息
   rv = nghttp2_session_adjust_idle_stream(session);
   if (nghttp2_is_fatal(rv)) {
     return rv;
   }
 
+  DEBUGF("nghttp2_session_mem_send_internal, aob->state:%d\n", aob->state);
   for (;;) {
     switch (aob->state) {
-    case NGHTTP2_OB_POP_ITEM: {
+    case NGHTTP2_OB_POP_ITEM: { //取出session各种帧所在队列的item帧信息
       nghttp2_outbound_item *item;
-
+    
       item = nghttp2_session_pop_next_ob_item(session);
       if (item == NULL) {
         return 0;
@@ -3058,6 +3064,7 @@ static ssize_t nghttp2_session_mem_send_internal(nghttp2_session *session,
 
       break;
     }
+    
     case NGHTTP2_OB_SEND_DATA: {
       size_t datalen;
       nghttp2_buf *buf;
@@ -3097,6 +3104,7 @@ static ssize_t nghttp2_session_mem_send_internal(nghttp2_session *session,
 
       return (ssize_t)datalen;
     }
+    
     case NGHTTP2_OB_SEND_NO_COPY: {
       nghttp2_stream *stream;
       nghttp2_frame *frame;
@@ -3164,17 +3172,25 @@ static ssize_t nghttp2_session_mem_send_internal(nghttp2_session *session,
       break;
     }
     case NGHTTP2_OB_SEND_CLIENT_MAGIC: {
+    /*
+    日志打印如下:
+[       nghttp2_session_mem_send_internal,  2895]: nghttp2_session_mem_send_internal, aob->state:3
+[      nghttp2_session_adjust_idle_stream,  1363]: stream: adjusting kept idle streams num_idle_streams=0, max=100
+[       nghttp2_session_mem_send_internal,  2895]: nghttp2_session_mem_send_internal, aob->state:3
+[       nghttp2_session_mem_send_internal,  3176]: send: end transmission of client magic
+    */
       size_t datalen;
       nghttp2_buf *buf;
 
       buf = &framebufs->cur->buf;
 
-      if (buf->pos == buf->last) {
+      if (buf->pos == buf->last) { //说明吧连接需要加入到了HttpClient.wb内存块中了,见HttpClient::on_write
         DEBUGF("send: end transmission of client magic\n");
         active_outbound_item_reset(aob, mem);
-        break;
+        break; //注意这里是break，还会继续执行其他case分支
       }
 
+      /* 连接需要NGHTTP2_CLIENT_MAGIC拷贝到session->aob */
       *data_ptr = buf->pos;
       datalen = nghttp2_buf_len(buf);
 
@@ -3186,6 +3202,7 @@ static ssize_t nghttp2_session_mem_send_internal(nghttp2_session *session,
   }
 }
 
+//该函数组帧，然后加入到 wb内存块中,见HttpClient::on_write
 ssize_t nghttp2_session_mem_send(nghttp2_session *session,
                                  const uint8_t **data_ptr) {
   int rv;

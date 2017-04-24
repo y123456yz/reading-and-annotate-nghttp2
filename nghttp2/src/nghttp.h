@@ -250,6 +250,44 @@ struct SessionTiming {
 
 enum class ClientState { IDLE, CONNECTED };
 
+/*
+HttpClient::HttpClient(const nghttp2_session_callbacks *callbacks,
+                       struct ev_loop *loop, SSL_CTX *ssl_ctx)
+    : wb(&mcpool),
+      session(nullptr),
+      callbacks(callbacks),
+      loop(loop),
+      ssl_ctx(ssl_ctx),
+      ssl(nullptr),
+      addrs(nullptr),
+      next_addr(nullptr),
+      cur_addr(nullptr),
+      complete(0),
+      success(0),
+      settings_payloadlen(0),
+      state(ClientState::IDLE),
+      upgrade_response_status_code(0),
+      fd(-1),
+      upgrade_response_complete(false) {
+  ev_io_init(&wev, writecb, 0, EV_WRITE);
+  ev_io_init(&rev, readcb, 0, EV_READ);
+
+  wev.data = this;
+  rev.data = this;
+
+  ev_timer_init(&wt, timeoutcb, 0., config.timeout);
+  ev_timer_init(&rt, timeoutcb, 0., config.timeout);
+
+  wt.data = this;
+  rt.data = this;
+
+  ev_timer_init(&settings_timer, settings_timeout_cb, 0., 10.);
+
+  settings_timer.data = this;
+}
+
+*/
+//初始化构造见HttpClient::HttpClient
 struct HttpClient {
   HttpClient(const nghttp2_session_callbacks *callbacks, struct ev_loop *loop,
              SSL_CTX *ssl_ctx);
@@ -297,8 +335,11 @@ struct HttpClient {
   void output_har(FILE *outfile);
 #endif // HAVE_JANSSON
 
+  /*
+   内存pool
+  */
   MemchunkPool mcpool;
-  DefaultMemchunks wb;
+  DefaultMemchunks wb; //wb = &mcpool
   //add_request赋值 communicate->add_request中赋值中调用    存储url等信息
   std::vector<std::unique_ptr<Request>> reqvec;  
   // Insert path already added in reqvec to prevent multiple request

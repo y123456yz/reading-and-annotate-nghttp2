@@ -65,9 +65,10 @@ template <size_t N> struct Memchunk {
   static const size_t size = N;
 };
 
+//内存池
 template <typename T> struct Pool {
   Pool() : pool(nullptr), freelist(nullptr), poolsize(0) {}
-  T *get() {
+  T *get() {  //从freelist选择一个m节点出来
     if (freelist) {
       auto m = freelist;
       freelist = freelist->next;
@@ -76,19 +77,23 @@ template <typename T> struct Pool {
       return m;
     }
 
+    //没有对应的m节点，则创建一个，并返回
+    
+    //make_unique创建并返回 unique_ptr 至指定类型的对象，该对象是使用指定的参数构造的。
     pool = make_unique<T>(std::move(pool));
     poolsize += T::size;
     return pool.get();
   }
-  void recycle(T *m) {
+  void recycle(T *m) { //m加入到freelist头部
     m->next = freelist;
     freelist = m;
   }
-  void clear() {
+  void clear() { //
     freelist = nullptr;
     pool = nullptr;
     poolsize = 0;
   }
+  
   using value_type = T;
   std::unique_ptr<T> pool;
   T *freelist;
@@ -144,6 +149,8 @@ template <typename Memchunk> struct Memchunks {
     ++len;
     return 1;
   }
+
+  //把src添加到chunk中
   size_t append(const void *src, size_t count) {
     if (count == 0) {
       return 0;
@@ -285,6 +292,7 @@ template <typename Memchunk> struct Memchunks {
     head = tail = nullptr;
   }
 
+  //内存池相关指针
   Pool<Memchunk> *pool;
   Memchunk *head, *tail;
   size_t len;
@@ -414,8 +422,10 @@ template <typename Memchunk> struct PeekMemchunks {
   bool peeking;
 };
 
+//内存池
 using Memchunk16K = Memchunk<16_k>;
 using MemchunkPool = Pool<Memchunk16K>;
+
 using DefaultMemchunks = Memchunks<Memchunk16K>;
 using DefaultPeekMemchunks = PeekMemchunks<Memchunk16K>;
 

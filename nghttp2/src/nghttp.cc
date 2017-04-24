@@ -1272,7 +1272,7 @@ int HttpClient::on_read(const uint8_t *data, size_t len) {
 
 int HttpClient::on_write() {
   for (;;) {
-    if (wb.rleft() >= 16384) {
+    if (wb.rleft() >= 16384) { //16K  消耗的内存超过了16K，则不能继续往内存块中添加帧信息了
       return 0;
     }
 
@@ -1288,7 +1288,7 @@ int HttpClient::on_write() {
       break;
     }
 
-    wb.append(data, len);
+    wb.append(data, len); //把这个新的len字节帧信息添加到wb内存块中
   }
 
   if (nghttp2_session_want_read(session) == 0 &&

@@ -104,7 +104,7 @@ typedef union {
 
 struct nghttp2_outbound_item;
 
-/* 初始化见nghttp2_outbound_item_init */
+/* 初始化见nghttp2_outbound_item_init，帧首先入队到nghttp2_session对应的帧队列上，然后在nghttp2_session_pop_next_ob_item中弹出 */
 typedef struct nghttp2_outbound_item nghttp2_outbound_item;
 struct nghttp2_outbound_item {
   nghttp2_frame frame;//frame内容
@@ -123,7 +123,7 @@ struct nghttp2_outbound_item {
   nghttp2_outbound_item *qnext; //连接下一个frame
   /* nonzero if this object is queued, except for DATA or HEADERS
      which are attached to stream as item. */
-  uint8_t queued;
+  uint8_t queued; //如果存入session对应的队列上面，queued置1，如果从队列上取下来，则queued置0，见nghttp2_session_pop_next_ob_item
 };
 
 /*
