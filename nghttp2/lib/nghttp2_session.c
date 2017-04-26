@@ -742,6 +742,7 @@ void nghttp2_session_del(nghttp2_session *session) {
   nghttp2_mem_free(mem, session);
 }
 
+//变更流优先级
 int nghttp2_session_reprioritize_stream(
     nghttp2_session *session, nghttp2_stream *stream,
     const nghttp2_priority_spec *pri_spec_in) {
@@ -1959,6 +1960,7 @@ static int session_prep_frame(nghttp2_session *session,
   mem = &session->mem;
   frame = &item->frame;
 
+  DEBUGF("session_prep_frame, type:%d\r", frame->hd.type);
   switch (frame->hd.type) {
   case NGHTTP2_DATA: {
     size_t next_readmax;
@@ -2188,6 +2190,7 @@ static int session_prep_frame(nghttp2_session *session,
       }
     }
 
+    //把seeting帧填充到framebufs
     rv = nghttp2_frame_pack_settings(&session->aob.framebufs, &frame->settings);
     if (rv != 0) {
       return rv;
@@ -2326,6 +2329,7 @@ nghttp2_outbound_item *
 nghttp2_session_pop_next_ob_item(nghttp2_session *session) {
   nghttp2_outbound_item *item;
 
+  //如果有PING帧和SETTING帧信息挂到ob_urgent队列，则先取出这两种帧
   item = nghttp2_outbound_queue_top(&session->ob_urgent);
   if (item) {
     nghttp2_outbound_queue_pop(&session->ob_urgent);
@@ -2333,6 +2337,7 @@ nghttp2_session_pop_next_ob_item(nghttp2_session *session) {
     return item;
   }
 
+  //如果ob_urgent队列的PING帧和SETTING填充到写区域完成，如果有RST_STREAM帧，则开始填充RST_STREAM
   item = nghttp2_outbound_queue_top(&session->ob_reg);
   if (item) {
     nghttp2_outbound_queue_pop(&session->ob_reg);
@@ -2895,17 +2900,21 @@ static ssize_t nghttp2_session_mem_send_internal(nghttp2_session *session,
     return rv;
   }
 
+ 
+  
   DEBUGF("nghttp2_session_mem_send_internal, aob->state:%d\n", aob->state);
   for (;;) {
     switch (aob->state) {
-    case NGHTTP2_OB_POP_ITEM: { //取出session各种帧所在队列的item帧信息
+    case NGHTTP2_OB_POP_ITEM: { //下面的NGHTTP2_OB_SEND_CLIENT_MAGIC magic需要填充到写内存区后，继续走该分支取出session各种帧所在队列的item帧信息
       nghttp2_outbound_item *item;
-    
+
+      //取出一个item出来
       item = nghttp2_session_pop_next_ob_item(session);
-      if (item == NULL) {
+      if (item == NULL) { //session对应的队列上没有要发送的frame帧信息了，直接返回
         return 0;
       }
 
+      //把该item帧信息填充到 nghttp2_session->aob.framebufs内存中
       rv = session_prep_frame(session, item);
       if (rv == NGHTTP2_ERR_PAUSE) {
         return 0;
@@ -3060,12 +3069,14 @@ static ssize_t nghttp2_session_mem_send_internal(nghttp2_session *session,
              framebufs->cur->buf.pos[3],
              framebufs->cur->buf.last - framebufs->cur->buf.pos);
 
-      aob->state = NGHTTP2_OB_SEND_DATA;
+      aob->state = NGHTTP2_OB_SEND_DATA; //状态置为NGHTTP2_OB_SEND_DATA
 
-      break;
+      break; //注意这里是break，则继续从session的队列中取出帧来填充到framebufs，直到session对应的队列上没有要发送的frame帧信息了，直接返回
     }
-    
-    case NGHTTP2_OB_SEND_DATA: {
+
+    //前面的NGHTTP2_OB_POP_ITEM状态取到frame并装入framebufs内存后，会把状态置为NGHTTP2_OB_SEND_DATA，在该分支把组装的framebufs通过data_ptr返回
+    //然后在HttpClient::on_write把帧信息发送出去
+    case NGHTTP2_OB_SEND_DATA: { 
       size_t datalen;
       nghttp2_buf *buf;
 
@@ -3187,7 +3198,7 @@ static ssize_t nghttp2_session_mem_send_internal(nghttp2_session *session,
       if (buf->pos == buf->last) { //说明吧连接需要加入到了HttpClient.wb内存块中了,见HttpClient::on_write
         DEBUGF("send: end transmission of client magic\n");
         active_outbound_item_reset(aob, mem);
-        break; //注意这里是break，还会继续执行其他case分支
+        break; //注意这里是break，还会继续执行其他case分支,发送其他frame帧信息
       }
 
       /* 连接需要NGHTTP2_CLIENT_MAGIC拷贝到session->aob */

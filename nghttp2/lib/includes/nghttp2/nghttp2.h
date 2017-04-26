@@ -781,7 +781,7 @@ typedef struct { //frameÍ¨ÓÃÍ·²¿ÐÅÏ¢£¬Í·²¿Ìî³ä¼ûnghttp2_frame_hd_init  Êý¾ÝÌî³äº
   /**
    * The type of this frame.  See `nghttp2_frame_type`.
    */
-  uint8_t type; //nghttp2_frame_type  Ö¡ÀàÐÍ
+  uint8_t type; //nghttp2_frame_type  Ö¡ÀàÐÍ  Í·²¿Ö¡µÄ¸³Öµ·â×°¼ûnghttp2_frame_hd_init
   /**
    * The flags.
    */
@@ -948,13 +948,13 @@ typedef enum {
    * The HEADERS frame is opening new stream, which is analogous to
    * SYN_STREAM in SPDY.
    */
-  NGHTTP2_HCAT_REQUEST = 0,
-  /**
+  NGHTTP2_HCAT_REQUEST = 0, //headderÇëÇóÖ¡
+  /** 
    * The HEADERS frame is the first response headers, which is
    * analogous to SYN_REPLY in SPDY.
    */
-  NGHTTP2_HCAT_RESPONSE = 1,
-  /**
+  NGHTTP2_HCAT_RESPONSE = 1, //Ó¦´ðÖ¡
+  /** 
    * The HEADERS frame is the first headers sent against reserved
    * stream.
    */
@@ -1028,7 +1028,7 @@ typedef struct {
   size_t nvlen;
   /**
    * The category of this HEADERS frame.
-   */
+   */ //¸³Öµ¼ûsession_process_headers_frame
   nghttp2_headers_category cat;
 } nghttp2_headers;
 

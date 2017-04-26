@@ -52,15 +52,15 @@ typedef enum {
   /* For stream initiator: request HEADERS has been sent, but response
      HEADERS has not been received yet.  For receiver: request HEADERS
      has been received, but it does not send response HEADERS yet. */
-  NGHTTP2_STREAM_OPENING,
+  NGHTTP2_STREAM_OPENING, //发送了headder帧，但是还没有收到head应答帧，进入该状态
   /* For stream initiator: response HEADERS is received. For receiver:
      response HEADERS is sent. */
-  NGHTTP2_STREAM_OPENED,
+  NGHTTP2_STREAM_OPENED, //接收到headding帧后进入该状态
   /* RST_STREAM is received, but somehow we need to keep stream in
      memory. */
   NGHTTP2_STREAM_CLOSING,
   /* PUSH_PROMISE is received or sent */
-  NGHTTP2_STREAM_RESERVED,
+  NGHTTP2_STREAM_RESERVED, //接收或者发送了推送帧进入该状态
   /* Stream is created in this state if it is used as anchor in
      dependency tree. */
   NGHTTP2_STREAM_IDLE

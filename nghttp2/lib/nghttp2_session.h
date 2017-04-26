@@ -65,15 +65,16 @@ typedef enum {
 } nghttp2_typemask;
 
 typedef enum {
-  NGHTTP2_OB_POP_ITEM,
-  NGHTTP2_OB_SEND_DATA,
+  NGHTTP2_OB_POP_ITEM, //取frame填充到framebufs的过程中，填充完毕后，状态置为NGHTTP2_OB_SEND_DATA
+  NGHTTP2_OB_SEND_DATA, //在该状态把帧信息发送出去，然后在HttpClient::on_write把帧信息发送出去
   NGHTTP2_OB_SEND_NO_COPY,
   NGHTTP2_OB_SEND_CLIENT_MAGIC
 } nghttp2_outbound_state;
 
+//nghttp2_session->aob
 typedef struct {
   nghttp2_outbound_item *item;
-  nghttp2_bufs framebufs;
+  nghttp2_bufs framebufs; //要发送的帧都是先把数据填充到该buf中
   nghttp2_outbound_state state;
 } nghttp2_active_outbound_item;
 
@@ -191,17 +192,17 @@ typedef struct nghttp2_inflight_settings nghttp2_inflight_settings;
 struct nghttp2_session {
   //所有的stream存入该map表中，参考nghttp2_session_get_stream
   nghttp2_map /* <nghttp2_stream*> */ streams;
-  /* root of dependency tree*/
-  nghttp2_stream root;
+  /* root of dependency tree*/ //流优先级变更见nghttp2_session_reprioritize_stream, nghttp初始流权重及依赖见 anchors
+  nghttp2_stream root; //Flow Control 流量控制相关，流依赖
   /* Queue for outbound urgent frames (PING and SETTINGS) */
-  nghttp2_outbound_queue ob_urgent; //PING帧和SETTING帧信息挂到ob_urgent队列
+  nghttp2_outbound_queue ob_urgent; //PING帧和SETTING帧信息挂到ob_urgent队列 参考nghttp2_session_add_item
   /* Queue for non-DATA frames */
-  nghttp2_outbound_queue ob_reg; // RST_STREAM挂到该队列
+  nghttp2_outbound_queue ob_reg; // RST_STREAM挂到该队列 参考nghttp2_session_add_item
   /* Queue for outbound stream-creating HEADERS (request or push
      response) frame, which are subject to
      SETTINGS_MAX_CONCURRENT_STREAMS limit. */
-  nghttp2_outbound_queue ob_syn;
-  //序言MAGIC NGHTTP2_CLIENT_MAGIC赋值，存入这里面
+  nghttp2_outbound_queue ob_syn; //参考nghttp2_session_add_item
+  //序言MAGIC NGHTTP2_CLIENT_MAGIC赋值，存入这里面 参考nghttp2_session_add_item，各种帧的发送都是先把数据填充到 aob->framebufs,例如nghttp2_frame_pack_settings
   nghttp2_active_outbound_item aob;
   nghttp2_inbound_frame iframe;
   nghttp2_hd_deflater hd_deflater; //HASH

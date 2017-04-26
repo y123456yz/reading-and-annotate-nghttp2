@@ -34,6 +34,7 @@
 #include "nghttp2_priority_spec.h"
 #include "nghttp2_debug.h"
 
+//把buf内容填充到hd头部中
 void nghttp2_frame_pack_frame_hd(uint8_t *buf, const nghttp2_frame_hd *hd) {
   nghttp2_put_uint32be(&buf[0], (uint32_t)(hd->length << 8));
   buf[3] = hd->type;
@@ -449,8 +450,10 @@ int nghttp2_frame_pack_settings(nghttp2_bufs *bufs, nghttp2_settings *frame) {
 
   buf->pos -= NGHTTP2_FRAME_HDLEN;
 
+  //填充http2 头部帧信息到bufs中
   nghttp2_frame_pack_frame_hd(buf->pos, &frame->hd);
 
+  //填充标识符信息到bufs中
   buf->last +=
       nghttp2_frame_pack_settings_payload(buf->last, frame->iv, frame->niv);
 
