@@ -2091,6 +2091,7 @@ int before_frame_send_callback(nghttp2_session *session,
 } // namespace
 
 namespace {
+//session_call_on_frame_send÷–÷¥––
 int on_frame_send_callback(nghttp2_session *session, const nghttp2_frame *frame,
                            void *user_data) {
   if (config.verbose) {

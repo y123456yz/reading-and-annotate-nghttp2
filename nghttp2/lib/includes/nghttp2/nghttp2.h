@@ -570,7 +570,7 @@ typedef enum { //各种帧的头部填充见nghttp2_frame_hd_init
   NGHTTP2_RST_STREAM = 0x03,
   /**
    * The SETTINGS frame.
-   */
+   */ //setting帧在nghttp2_frame_pack_settings填充到write buff中
   NGHTTP2_SETTINGS = 0x04,
   /**
    * The PUSH_PROMISE frame.

@@ -245,6 +245,7 @@ const char *frame_name_ansi_esc(print_type ptype) {
 }
 } // namespace
 
+//每发送一个frame帧出去都打印相关的帧信息
 namespace {
 void print_frame(print_type ptype, const nghttp2_frame *frame) {
   fprintf(outfile, "%s%s%s frame ", frame_name_ansi_esc(ptype),
@@ -398,6 +399,15 @@ int verbose_on_invalid_frame_recv_callback(nghttp2_session *session,
   return 0;
 }
 
+//每发送一个frame帧出去，打印相关的信息,例如下面:
+/*
+[  1.430] send SETTINGS frame <length=12, flags=0x00, stream_id=0>
+
+          (niv=2)
+          [SETTINGS_MAX_CONCURRENT_STREAMS(0x03):100]
+          [SETTINGS_INITIAL_WINDOW_SIZE(0x04):65535]
+
+*/
 int verbose_on_frame_send_callback(nghttp2_session *session,
                                    const nghttp2_frame *frame,
                                    void *user_data) {

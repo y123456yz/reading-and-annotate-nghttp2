@@ -1950,7 +1950,7 @@ static int session_pack_extension(nghttp2_session *session, nghttp2_bufs *bufs,
  *
  * This function returns 0 if it succeeds, or one of negative error
  * codes, including both fatal and non-fatal ones.
- */
+ */ //把该item帧信息填充到 nghttp2_session->aob.framebufs内存中
 static int session_prep_frame(nghttp2_session *session,
                               nghttp2_outbound_item *item) {
   int rv;
@@ -2378,6 +2378,7 @@ static int session_call_before_frame_send(nghttp2_session *session,
   return 0;
 }
 
+//nghttp2_session_mem_send->session_after_frame_sent1中调用
 static int session_call_on_frame_send(nghttp2_session *session,
                                       nghttp2_frame *frame) {
   int rv;
@@ -2901,11 +2902,11 @@ static ssize_t nghttp2_session_mem_send_internal(nghttp2_session *session,
   }
 
  
-  
   DEBUGF("nghttp2_session_mem_send_internal, aob->state:%d\n", aob->state);
   for (;;) {
     switch (aob->state) {
-    case NGHTTP2_OB_POP_ITEM: { //下面的NGHTTP2_OB_SEND_CLIENT_MAGIC magic需要填充到写内存区后，继续走该分支取出session各种帧所在队列的item帧信息
+//通过nghttp2_session_pop_next_ob_item取出session各种帧队列上的item帧信息，然后session_prep_frame组包填充到framebufs区，通过HttpClient::on_write发送出去
+    case NGHTTP2_OB_POP_ITEM: { //下面的NGHTTP2_OB_SEND_CLIENT_MAGIC magic序言填充到写内存区后，继续走该分支取出session各种帧所在队列的item帧信息
       nghttp2_outbound_item *item;
 
       //取出一个item出来
@@ -2924,74 +2925,74 @@ static ssize_t nghttp2_session_mem_send_internal(nghttp2_session *session,
         break;
       }
       if (rv < 0) {
-        int32_t opened_stream_id = 0;
-        uint32_t error_code = NGHTTP2_INTERNAL_ERROR;
+            int32_t opened_stream_id = 0;
+            uint32_t error_code = NGHTTP2_INTERNAL_ERROR;
 
-        DEBUGF("send: frame preparation failed with %s\n",
-               nghttp2_strerror(rv));
-        /* TODO If the error comes from compressor, the connection
-           must be closed. */
-        if (item->frame.hd.type != NGHTTP2_DATA &&
-            session->callbacks.on_frame_not_send_callback && is_non_fatal(rv)) {
-          nghttp2_frame *frame = &item->frame;
-          /* The library is responsible for the transmission of
-             WINDOW_UPDATE frame, so we don't call error callback for
-             it. */
-          if (frame->hd.type != NGHTTP2_WINDOW_UPDATE &&
-              session->callbacks.on_frame_not_send_callback(
-                  session, frame, rv, session->user_data) != 0) {
+            DEBUGF("send: frame preparation failed with %s\n",
+                   nghttp2_strerror(rv));
+            /* TODO If the error comes from compressor, the connection
+               must be closed. */
+            if (item->frame.hd.type != NGHTTP2_DATA &&
+                session->callbacks.on_frame_not_send_callback && is_non_fatal(rv)) {
+              nghttp2_frame *frame = &item->frame;
+              /* The library is responsible for the transmission of
+                 WINDOW_UPDATE frame, so we don't call error callback for
+                 it. */
+              if (frame->hd.type != NGHTTP2_WINDOW_UPDATE &&
+                  session->callbacks.on_frame_not_send_callback(
+                      session, frame, rv, session->user_data) != 0) {
+
+                nghttp2_outbound_item_free(item, mem);
+                nghttp2_mem_free(mem, item);
+
+                return NGHTTP2_ERR_CALLBACK_FAILURE;
+              }
+            }
+            /* We have to close stream opened by failed request HEADERS
+               or PUSH_PROMISE. */
+            switch (item->frame.hd.type) {
+            case NGHTTP2_HEADERS:
+              if (item->frame.headers.cat == NGHTTP2_HCAT_REQUEST) {
+                opened_stream_id = item->frame.hd.stream_id;
+                if (item->aux_data.headers.canceled) {
+                  error_code = item->aux_data.headers.error_code;
+                } else {
+                  /* Set error_code to REFUSED_STREAM so that application
+                     can send request again. */
+                  error_code = NGHTTP2_REFUSED_STREAM;
+                }
+              }
+              break;
+            case NGHTTP2_PUSH_PROMISE:
+              opened_stream_id = item->frame.push_promise.promised_stream_id;
+              break;
+            }
+            if (opened_stream_id) {
+              /* careful not to override rv */
+              int rv2;
+              rv2 = nghttp2_session_close_stream(session, opened_stream_id,
+                                                 error_code);
+
+              if (nghttp2_is_fatal(rv2)) {
+                return rv2;
+              }
+            }
 
             nghttp2_outbound_item_free(item, mem);
             nghttp2_mem_free(mem, item);
+            active_outbound_item_reset(aob, mem);
 
-            return NGHTTP2_ERR_CALLBACK_FAILURE;
-          }
-        }
-        /* We have to close stream opened by failed request HEADERS
-           or PUSH_PROMISE. */
-        switch (item->frame.hd.type) {
-        case NGHTTP2_HEADERS:
-          if (item->frame.headers.cat == NGHTTP2_HCAT_REQUEST) {
-            opened_stream_id = item->frame.hd.stream_id;
-            if (item->aux_data.headers.canceled) {
-              error_code = item->aux_data.headers.error_code;
-            } else {
-              /* Set error_code to REFUSED_STREAM so that application
-                 can send request again. */
-              error_code = NGHTTP2_REFUSED_STREAM;
+            if (rv == NGHTTP2_ERR_HEADER_COMP) {
+              /* If header compression error occurred, should terminiate
+                 connection. */
+              rv = nghttp2_session_terminate_session(session,
+                                                     NGHTTP2_INTERNAL_ERROR);
             }
-          }
-          break;
-        case NGHTTP2_PUSH_PROMISE:
-          opened_stream_id = item->frame.push_promise.promised_stream_id;
-          break;
-        }
-        if (opened_stream_id) {
-          /* careful not to override rv */
-          int rv2;
-          rv2 = nghttp2_session_close_stream(session, opened_stream_id,
-                                             error_code);
-
-          if (nghttp2_is_fatal(rv2)) {
-            return rv2;
-          }
-        }
-
-        nghttp2_outbound_item_free(item, mem);
-        nghttp2_mem_free(mem, item);
-        active_outbound_item_reset(aob, mem);
-
-        if (rv == NGHTTP2_ERR_HEADER_COMP) {
-          /* If header compression error occurred, should terminiate
-             connection. */
-          rv = nghttp2_session_terminate_session(session,
-                                                 NGHTTP2_INTERNAL_ERROR);
-        }
-        if (nghttp2_is_fatal(rv)) {
-          return rv;
-        }
-        break;
-      }
+            if (nghttp2_is_fatal(rv)) {
+              return rv;
+            }
+            break;
+      } //异常处理结尾处
 
       aob->item = item;
 
@@ -3228,6 +3229,7 @@ ssize_t nghttp2_session_mem_send(nghttp2_session *session,
   }
 
   if (session->aob.item) {
+    DEBUGF("nghttp2_session_mem_send\n");
     /* We have to call session_after_frame_sent1 here to handle stream
        closure upon transmission of frames.  Otherwise, END_STREAM may
        be reached to client before we call nghttp2_session_mem_send
@@ -3237,6 +3239,7 @@ ssize_t nghttp2_session_mem_send(nghttp2_session *session,
       assert(nghttp2_is_fatal(rv));
       return (ssize_t)rv;
     }
+    DEBUGF("nghttp2_session_mem_send\n");
   }
 
   return len;
