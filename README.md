@@ -32,3 +32,9 @@ nginx http2模块源码分析可以参考:https://github.com/y123456yz/reading-c
 对quic源码实现有兴趣的可以参考:https://github.com/y123456yz/reading-and-annotate-proto-quic  
 
    
+
+nginx http2 quic学习参考:    
+===================================    
+nginx源码中文详细分析注释参考：https://github.com/y123456yz/reading-code-of-nginx-1.9.2 
+libquic goquic编译安装，源码分析注释：https://github.com/y123456yz/reading-and-annotate-quic      
+nghttp2相关参考：https://github.com/y123456yz/reading-and-annotate-nghttp2   
